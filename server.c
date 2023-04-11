@@ -7,6 +7,24 @@
 #include <stdio.h>
 #include <string.h>
 
+#define BUFFER_SIZE 1024
+
+#define WEEK_SIZE 7
+#define ROOM_SIZE 3
+#define TABLE_SIZE 20
+#define HOUR_SIZE 24
+
+#define CHOOSE_LEN 5
+#define ID_LEN 3
+#define ID_BOOK_LEN 12
+
+#define MENU_SIZE 8
+#define COMANDA_SIZE 4
+#define TAV_SIZE
+
+#define MAX_DEVICE 10
+
+
 struct prenotazione 
 {
     char cognome[20];
@@ -15,7 +33,26 @@ struct prenotazione
     int HH;
 };
 
+/*la funzione cerca la prenotazione richiesta, la schedula e lo fa modificando il file delle prenotazioni (?)*/
 
+int findPosto(struct prenotazione p)
+{
+
+    FILE *fp;
+    fp = fopen("FindPrenotazioni.txt", "r");
+
+    if (fp == NULL) {
+    printf("Errore nell'apertura del file");
+    exit(1);
+    }
+
+
+
+
+    fclose(fp);
+
+   
+}
 
 int main()
 {
@@ -75,12 +112,12 @@ int main()
 
         ret = recv(new_sd,(void*)buffer,bytes_needed,0);
 
-        printf("lunghezza buffer: %d\n",bytes_needed);
-        printf("dati ricevuti: %d\n",ret);
-        printf("buffer: %s\n",buffer);
+        //printf("lunghezza buffer: %d\n",bytes_needed);
+        //printf("dati ricevuti: %d\n",ret);
+        //printf("buffer: %s\n",buffer);
 
         sscanf(buffer, "%s %s %d %s %d" ,bufferCommand, p.cognome, &p.nPersone, p.data, &p.HH);
-        printf("prenotazione registrata!\n");
+        //printf("prenotazione registrata!\n");
         printf(" %s %d %s %d\n" , p.cognome, p.nPersone, p.data, p.HH);
 
         fp = fopen("FindPrenotazioni.txt", "a");
@@ -91,6 +128,17 @@ int main()
 
         fprintf(fp, buffer);
         fclose(fp);
+
+        /*analisi dei posti per individuare una possibile prenotazione*/
+        ret = findPosto(p);
+
+        strcpy(bufferCommand,"qui andranno i posti");
+        len = strlen(bufferCommand) +1;
+        real_len=htons(len);
+        ret=send(new_sd,(void*)&real_len,sizeof(uint32_t),0);
+        ret =send(new_sd,(void*)bufferCommand,len,0);
+
+        printf("trasferimento verso il client avvenuto\n");
 
         close(new_sd);
         exit(0);

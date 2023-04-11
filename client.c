@@ -33,7 +33,9 @@ int main(int argc, char* argv[])
     char input_string[MAX_LEN];
     char token[100];
 
-    //struct prenotazione p;
+    printf("\nfind --> ricerca la disponibilità per una prenotazione\n");
+    printf("book --> invia una prenotazione\n");
+    printf("esc --> termina il client\n\n");
 
     sd = socket(AF_INET,SOCK_STREAM,0);
     memset(&srv_addr,0,sizeof(srv_addr));
@@ -56,7 +58,7 @@ int main(int argc, char* argv[])
 
     if(strcmp(token,"esc")==0)
     {
-        printf("arrivederci!");
+        printf("arrivederci!\n");
         return;
     }
     else if(strcmp(token,"find")==0) //COMANDO FIND: TRASMISSIONE PARAMETRI
@@ -82,7 +84,6 @@ int main(int argc, char* argv[])
         ret = send(sd,(void*)buffer,len,0);
 
         printf("dati: %s\n",buffer);
-        //printf("lunghezza buffer: %s\n",len);
 
         
         if(ret < len)
@@ -91,9 +92,10 @@ int main(int argc, char* argv[])
         }
         //COMANDO FIND: RICEZIONE PARAMETRI
 
-        //ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
-        //bytes_needed = ntohs(real_len);
-        //ret = recv(sd,(void*)postiDisponibili,bytes_needed,0);
+        ret = recv(sd,(void*)&real_len,sizeof(uint32_t),0);
+        bytes_needed = ntohs(real_len);
+        ret = recv(sd,(void*)postiDisponibili,bytes_needed,0);
+        printf("risposta del server: %s\n",postiDisponibili);
     }
     else if(strcmp(token,"book")) //COMANDO BOOK: TRASMISSIONE PARAMETRI
     {
