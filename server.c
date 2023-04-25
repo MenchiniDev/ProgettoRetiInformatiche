@@ -1,4 +1,4 @@
-#include <arpa/inet.h>/*server.c 25/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -697,7 +697,7 @@ int main()
                         if(strcmp(bufferCommand,"take")==0)
                         {
                             char ComBuffer[BUFFER_SIZE];
-                            char appoggio[BUFFER_SIZE];
+                            //char appoggio[BUFFER_SIZE];
                             FILE *fp1;
 
                             fp = fopen("Comande.txt","r+");
@@ -711,35 +711,88 @@ int main()
                                 return 1;
                             }
                             char line[100];
-                            char comanda[10];
-                            char comandaContr[10];
-                            char ordine[10];
+                            char comanda[100];
+                            char Prenotazione[100];
+                            char comandaContr[100];
+                            char appoggio[BUFFER_SIZE];
+                            char ordine[100];
                             int stato=0;
                             int b = 0; //prende la prima comanda non in preparazione
                             while (fgets(line, sizeof(line), fp)) { 
-                                    printf("line:%s\n",line);
-                                    sscanf(line,"%s %s %s %d",comanda[10],c.idPrenotazione,ordine,stato);
+                                    sscanf(line,"%s %s %s %d",comanda,Prenotazione,ordine,&stato);
+                                    //printf("line:%s %s %s %d\n",comanda,Prenotazione,ordine,stato);
                                     if(stato==0 && b == 0) //salvo nome comanda utile
                                     {
                                         b = 1;
+                                        /*mando prima il codice comanda*/
                                         strcpy(comandaContr,comanda);
-                                        printf("comanda da mandare: %s\n",comandaContr);
+                                        len = strlen(comandaContr) + 1;
+                                        real_len=htons(len);
+                                        ret=send(i,(void*)&real_len,sizeof(uint16_t),0);
+                                        ret=send(i,(void*)comandaContr,len,0);
+                                        printf("codice comanda:%s\n",comandaContr);
                                     }
                                     if(strcmp(comanda,comandaContr)==0){
                                         stato = 1;
-
-                                        sprintf(ComBuffer,"%s %s",appoggio,ordine);
+                                        sprintf(appoggio,"%s\n",ordine);
                                         strcat(ComBuffer,appoggio);
                                     }
-                                    fprintf(fp1, "%s %s %s %d", comanda[10],c.idPrenotazione,ordine,stato);
+                                    fprintf(fp1, "%s %s %s %d\n", comanda,Prenotazione,ordine,stato);
                                     stato=0;
                             }
+                            /*poi mando gli ordini della comanda al kd*/
+                            len = strlen(ComBuffer) + 1;
+                            real_len=htons(len);
+                            ret=send(i,(void*)&real_len,sizeof(uint16_t),0);
+                            ret=send(i,(void*)ComBuffer,len,0);
+
+                            printf("comanda mandata: \n%s\n",ComBuffer);
+
                             fclose(fp);
                             fclose(fp1);
                             remove("Comande.txt");
                             rename("Comande2.txt","Comande.txt");
                         }else if(strcmp(bufferCommand,"show")==0)
                         {
+                            char bufferShow[BUFFER_SIZE];
+
+                            char line[100];
+                            char comanda[100];
+                            char Prenotazione[100];
+                            char comandaContr[100];
+                            char appoggio[BUFFER_SIZE];
+                            char ComBuffer[BUFFER_SIZE];
+                            char ordine[100];
+                            int stato=0;
+                            int b = 0;
+                            fp = fopen("Comande.txt","r");
+
+                            while (fgets(line, sizeof(line), fp)) { 
+                                    sscanf(line,"%s %s %s %d",comanda,Prenotazione,ordine,&stato);
+                                    if(stato==1 && b == 0)
+                                    {
+                                        /*mando il codice comanda*/
+                                        strcpy(comandaContr,comanda);
+                                        len = strlen(comandaContr) + 1;
+                                        real_len=htons(len);
+                                        ret=send(i,(void*)&real_len,sizeof(uint16_t),0);
+                                        ret=send(i,(void*)comandaContr,len,0);
+                                        printf("codice comanda:%s\n",comandaContr);
+
+                                    }stato=0;b=1;
+                                if(strcmp(comandaContr,comanda)==0)
+                                {
+                                    sprintf(appoggio,"%s\n",ordine);
+                                    strcat(ComBuffer,appoggio);
+                                }
+                            }
+                                /*mando tutta la comanda*/
+                                len = strlen(ComBuffer) + 1;
+                                real_len=htons(len);
+                                ret=send(i,(void*)&real_len,sizeof(uint16_t),0);
+                                ret=send(i,(void*)ComBuffer,len,0);
+
+                                printf("comanda mandata: \n%s\n",ComBuffer);
 
                         }else if(strcmp(bufferCommand,"ready")==0)
                         {

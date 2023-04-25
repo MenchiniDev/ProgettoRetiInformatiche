@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*kd.c 25/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -52,7 +52,7 @@ int main()
     ret = send(sd, type, strlen(type)+1, 0);
     if(ret < 0)
     {
-        printf("eerrore \n");
+        printf("errore \n");
         exit(-1);
     }
     if(ret==0)
@@ -81,7 +81,6 @@ int main()
                 if(i == 0) {
                     fgets(input_string, 100, stdin);
                     sscanf(input_string,"%s",token);
-
                     //invio token
 
                     strcpy(bufferCommand,input_string);
@@ -96,11 +95,32 @@ int main()
 
                     if(strcmp(token,"take")==0) // mette ad uno la prima comanda
                     {
-                        
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        bytes_needed = ntohs(real_len);
+                        ret = recv(sd,(void*)buffer,bytes_needed,0);
+                        buffer[bytes_needed-1]='\0';
+                        printf("comanda:%s\n",buffer);
+
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        bytes_needed = ntohs(real_len);
+                        ret = recv(sd,(void*)buffer,bytes_needed,0);
+                        buffer[bytes_needed-1]='\0';
+                        printf("%s\n",buffer);
+
                     }
                     else if(strcmp(token,"show")==0)
                     {
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        bytes_needed = ntohs(real_len);
+                        ret = recv(sd,(void*)buffer,bytes_needed,0);
+                        buffer[bytes_needed-1]='\0';
+                        printf("comanda:%s\n",buffer);
 
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        bytes_needed = ntohs(real_len);
+                        ret = recv(sd,(void*)buffer,bytes_needed,0);
+                        buffer[bytes_needed-1]='\0';
+                        printf("%s\n",buffer);
                     }
                     else if(strcmp(token,"ready")==0)
                     {
