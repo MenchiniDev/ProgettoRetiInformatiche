@@ -74,11 +74,20 @@ int main()
     int i;
     char ok='s';
     int help =0;
-   
+    //INVIO T E SECONDO TIPO
+    real_len=htons(2);
+    ret = send(sd, type, strlen(type)+1, 0);
+    
+
+    ret = send(sd, (void*) &cmd_new, sizeof(uint16_t),0); 
+    if(ret < 0){
+        perror("Errore in fase di connessione: \n");
+        exit(1);
+    }
     for(;;)
     {
         read_fds = master;
-         if(!help)
+        if(!help)
             printf("inserisci il codice di prenotazione\n");
         ret = select(fdmax+1,&read_fds,NULL,NULL,NULL);
         if(ret < 0)
@@ -97,9 +106,6 @@ int main()
                     //printf("inserisci il codice di prenotazione\n");
                     struct Comanda c;
                     char prenoCode[20];
-                    //PRIMA TRASMISSIONE: INVIO T
-                    real_len=htons(2);
-                    ret = send(sd, type, strlen(type)+1, 0);
 
                     //validazione codice prenotazione
                     //invio codice

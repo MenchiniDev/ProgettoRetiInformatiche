@@ -25,6 +25,9 @@
 
 #define MAX_DEVICE 10
 
+#define MAX_DISP 5
+
+
 struct settimana{
     int numeroGiorno;
     struct sala{
@@ -72,13 +75,105 @@ struct comanda /*non so se mantenerla*/
     int stato; // 0->appena arrivata, 1->in gestione 2->in servizio
 };
 
+typedef struct
+{
+    int sd;
+    char tipo;
+}disp;
+
+typedef struct
+{
+    int sd;
+    int tipo;
+}dispTav;
+
+void caricaDisp(disp*d, int nDisp){
+    FILE*fptr;
+    fptr=fopen("dispConnessi.txt","w");
+    if(fptr == NULL)
+    {
+      printf("Error!");   
+      exit(1);             
+    }
+    int i_f;
+    for(i_f=0; i_f<nDisp; i_f++){
+        fprintf(fptr,"%d %c \n", d[i_f].sd, d[i_f].tipo);
+    }
+    fclose(fptr);
+}
+
+void caricaTav(dispTav*d2, int nDisp){
+    FILE*fptr;
+    fptr=fopen("tavConnessi.txt","w");
+    if(fptr == NULL)
+    {
+      printf("Error!");   
+      exit(1);             
+    }
+    int i_f;
+    for(i_f=0; i_f<nDisp; i_f++){
+        fprintf(fptr,"%d %d \n", d2[i_f].sd, d2[i_f].tipo);
+    }
+    fclose(fptr);
+}
+
+int  leggi_tipo(int newsocket, char* newtype, int nDisp){
+    FILE* fp;
+    int socket=0;
+    char type;
+    int controllo=0;
+    int i;
+    if((fp = fopen("dispConnessi.txt","r")) == NULL){
+       printf("Error! opening file\n");
+       exit(1);
+    }
+    for( i=0; i<nDisp; i++){
+      fscanf(fp,"%d %c",&socket,&type );
+
+        printf("\nil socket è %d, il new %d\n", socket, newsocket);
+      if(socket==newsocket){ //se quello che prende dal file è uguale a quello NUOVO
+        *newtype=type;       // Aggiorna type
+        controllo=1;         // metti controllo a 1
+      }
+      
+    }
+    return controllo;       //se non lo trovi metti controllo a 0
+    fclose(fp);
+}
+int  leggi_tipoTav(int newsocket, int* newtype, int nDisp){
+    FILE* fptr;
+    int socket=0;
+    int type;
+    int controllo=0;
+    int i;
+    if((fptr = fopen("tavConnessi.txt","r")) == NULL){
+       printf("Error! opening file");
+       // Program exits if the file pointer returns NULL.
+       exit(1);
+    }
+    for( i=0; i<nDisp; i++){
+      fscanf(fptr,"%d %d",&socket,&type );
+
+        printf("\nil socket è %d, il new %d\n", socket, newsocket);
+      if(socket==newsocket){ //se quello che prende dal file è uguale a quello NUOVO
+        *newtype=type;       // Aggiorna type
+        controllo=1;         // metti controllo a 1
+      }
+      
+    }
+    return controllo;       //se non lo trovi metti controllo a 0
+    fclose(fptr);
+}
+
 int main()
 {
     int ret, sd, new_sd, len,bytes_needed,cl;
+    int nDisp=0;
     int listener;
     int prenIndex;
     struct sockaddr_in cl_addr, cl2_addr;
     int i;
+    int check =0;
     char buffer[1024],bufferCommand[1024],buftype[2];
     char type;
     FILE *fp,*fptr;
@@ -105,9 +200,9 @@ int main()
     struct prenotazione p;
     struct settimana sett[WEEK_SIZE];
     struct tavolo tav[TAV_SIZE];
-    //device d[MAX_DEVICE];
-    //device_2 d_2[MAX_DEVICE];
-    //int nn;
+    disp d[MAX_DEVICE];
+    dispTav d_2[MAX_DEVICE];
+    int nn;
     fd_set master;
     fd_set read_fds;
     int fdmax;
@@ -225,25 +320,53 @@ int main()
                 }
                 if(i==listener)
                 {
+                    printf("Nuovo cliente rilevato!\n");
                     fflush(stdout);
+
+                    // Dimensione dell'indirizzo del client
                     len = sizeof(cl_addr);
                     socklen_t len_p = sizeof(struct sockaddr);
+                    // Accetto nuove connessioni 
+                    //*** ATTENZIONE: BLOCCANTE!!! ***
                     new_sd = accept(listener, (struct sockaddr *) &cl_addr, &len_p);
-
-                    FD_SET(new_sd, &master);
-                    if(new_sd > fdmax)
-                    {
-                        fdmax = new_sd;
-                    }
-                }
-                else
-                {
-                    //PRIMA RICEZIONE C
+                    printf("il new_sd è:%d\n", new_sd);
+                    char buftype[2];
                     ret = recv(new_sd, (void*)buftype, 2, 0);
                     sscanf(buftype, "%c", &type);
 
-                    printf("tipo: %c\n", type);
-
+                    printf("il tipo è %c\n", type);
+                    if(type == 'T'){ /*iinizio nuova parte*/
+                        
+                        ret = recv(new_sd, (void*)&type_2, sizeof(uint16_t), 0);
+                        printf("il tipo_2 è %d\n", type_2);
+                        check_2 = leggi_tipo_2(new_sd, &type_2, numdevice_2);
+                        printf("sono il check_2:%d\n",check_2);
+                        if(check_2==0){//se non c'è nella lista lo carico su file
+                            
+                            d_2[numdevice_2].sd=new_sd;
+                            d_2[numdevice_2].tp=type_2;
+                            numdevice_2++;
+                            carica_device_2(d_2,numdevice_2);
+                            printf("\nl'ho caricato nel file\n");
+                        }
+                    }
+                    check = leggi_tipo(new_sd, &type, numdevice);
+                    printf("sono il check:%d\n",check);
+                    if(check==0){//se non c'è nella lista lo carico su file
+                        
+                        d[numdevice].sd=new_sd;
+                        d[numdevice].tp=type;
+                        numdevice++;
+                        carica_device(d,numdevice);
+                        printf("\nl'ho caricato nel file\n");
+                    }
+                    printf("\nsto aspettando qui\n");
+                    FD_SET(new_sd, &master);
+                    if(new_sd > fdmax){fdmax = new_sd;}
+                    printf("\nsto aspettando qui DUE\n");
+                }else
+                {
+                    //PRIMA RICEZIONE C
                     if(type=='C')
                     {
                     //SECONDA RICEZIONE: TOKEN
@@ -473,6 +596,8 @@ int main()
                     }
                     if(type=='T')
                     {
+                        //int check = leggi_tipo(new_sd, &type, numdevice);
+
                         /*
                           l'intero serve per evitare di mandare sempre il
                           codice di prenotazione
