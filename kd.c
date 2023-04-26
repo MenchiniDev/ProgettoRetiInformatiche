@@ -98,9 +98,15 @@ int main()
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
-                        buffer[bytes_needed-1]='\0';
-                        printf("comanda:%s\n",buffer);
+                        buffer[bytes_needed-2]='\0';
+                        printf("%s",buffer);
 
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        bytes_needed = ntohs(real_len);
+                        ret = recv(sd,(void*)buffer,bytes_needed,0);
+                        buffer[bytes_needed-1]='\0';
+                        printf("-%s\n",buffer);
+                    
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);

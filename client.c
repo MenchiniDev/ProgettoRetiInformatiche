@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*client.c 25/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -51,6 +51,10 @@ int main(int argc, char* argv[])
     inet_pton(AF_INET,"127.0.0.1",&srv_addr.sin_addr); 
 
     ret = connect(sd,(struct sockaddr*)&srv_addr,sizeof(srv_addr));
+    
+    //PRIMA TRASMISSIONE: INVIO C
+    real_len=htons(2);
+    ret = send(sd, type, strlen(type)+1, 0);
     if(ret < 0)
     {
         printf("impossibile connettersi al server \n");
@@ -60,9 +64,6 @@ int main(int argc, char* argv[])
 
     //PRENOTAZIONE SU CLIENT    
     for(;;){
-        //PRIMA TRASMISSIONE: INVIO C
-        real_len=htons(2);
-        ret = send(sd, type, strlen(type)+1, 0);
         fgets(input_string, 100, stdin);
         sscanf(input_string,"%s",token);
 

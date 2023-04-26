@@ -42,6 +42,7 @@ int main()
     char buffer[BUFFER_SIZE],bufferCommand[BUFFER_SIZE];
     int bufferlen;
     char *type = "T\0";
+    int cmd_new=1;
     struct sockaddr_in srv_addr;
 
     //necessario per il parametro di ingresso
@@ -67,28 +68,29 @@ int main()
         printf("impossibile connettersi al server \n");
         exit(-1);
     }
-    FD_SET(sd, &master);
-    FD_SET(0, &master);
     //fdmax = listener;
     fdmax = max(sd, 0);
     int i;
     char ok='s';
     int help =0;
+    
     //INVIO T E SECONDO TIPO
     real_len=htons(2);
     ret = send(sd, type, strlen(type)+1, 0);
-    
-
     ret = send(sd, (void*) &cmd_new, sizeof(uint16_t),0); 
     if(ret < 0){
         perror("Errore in fase di connessione: \n");
         exit(1);
     }
+    if(!help) 
+        printf("inserisci il codice di prenotazione\n");
+
+    FD_SET(sd, &master);
+    FD_SET(0, &master);
+    fdmax = max(sd, 0);
     for(;;)
     {
         read_fds = master;
-        if(!help)
-            printf("inserisci il codice di prenotazione\n");
         ret = select(fdmax+1,&read_fds,NULL,NULL,NULL);
         if(ret < 0)
         {
@@ -147,7 +149,7 @@ int main()
 
                     if(strcmp(token,"help")==0)
                     {
-                        printf("-289 giorni al carnevale\n");
+                        printf("-280 giorni al carnevale\n");
                     }
                     else if(strcmp(token,"menu")==0)
                     {
@@ -167,12 +169,12 @@ int main()
                         ret =send(sd,(void*)bufferCommand,len,0);
 
                         //invio codice di prenotazione per gestire la comanda    
-                        strcpy(bufferCommand,c.idPrenotazione);
+                        strcpy(bufferCommand,prenoCode);
                         len = strlen(bufferCommand) +1;
                         real_len=htons(len);
                         ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
                         ret =send(sd,(void*)bufferCommand,len,0);
-                        printf("COMANDA RICEVUTA\n");
+                        printf("COMANDA RICEVUTA a nome di: %s\n",prenoCode);
                     }
                     else if(strcmp(token,"conto")==0)
                     {
@@ -188,6 +190,14 @@ int main()
 
                         /*ricevo il conto e lo stampo a video*/
                     }
+                }else{
+                    char buffer_take[1024];
+                    ret = recv(i, (void*)&real_len, sizeof(uint16_t), 0);
+                    // Conversione in formato 'host'
+                    len = ntohs(real_len); 
+                    // Ricezione del messaggio
+                    ret = recv(i, (void*)buffer_take, len, 0); 
+                    printf("%s\n", buffer_take);
                 }
             }
         }
