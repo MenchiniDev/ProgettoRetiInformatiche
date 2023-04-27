@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*td.c 25/04/2023*/
+#include <arpa/inet.h> /*td.c 27/04/2023*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -174,7 +174,15 @@ int main()
                         real_len=htons(len);
                         ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
                         ret =send(sd,(void*)bufferCommand,len,0);
-                        printf("COMANDA RICEVUTA a nome di: %s\n",prenoCode);
+
+                        char new_buffer[3];
+                        ret = recv(sd, (void*)&real_len,sizeof(uint16_t), 0);
+                        len = ntohs(real_len);
+                        ret = recv(sd, (void*)new_buffer,3, 0);
+                        if(strcmp(new_buffer,"OK\0")==0){
+                        printf("\nCOMANDA RICEVUTA\n");
+                        }
+                        //printf("COMANDA RICEVUTA a nome di: %s\n",prenoCode);
                     }
                     else if(strcmp(token,"conto")==0)
                     {

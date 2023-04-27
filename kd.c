@@ -1,4 +1,4 @@
-#include <arpa/inet.h>
+#include <arpa/inet.h> /*kd.c 27/04/2023*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -18,7 +18,7 @@ void stampa()
 {
     printf("\ntake --> accetta una comanda\n");
     printf("show --> mostra le comande accettate\n");
-    printf("set --> imposta lo stato della comanda\n\n");
+    printf("ready --> imposta lo stato della comanda\n\n");
 }
 
 
@@ -85,7 +85,6 @@ int main()
 
                     strcpy(bufferCommand,input_string);
                     len = strlen(bufferCommand) +1;
-
                     real_len=htons(len);
                     ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
                     ret=send(sd,(void*)bufferCommand,len,0);
@@ -98,7 +97,7 @@ int main()
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
-                        buffer[bytes_needed-2]='\0';
+                        buffer[bytes_needed-1]='\0';
                         printf("%s",buffer);
 
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
@@ -130,7 +129,7 @@ int main()
                     }
                     else if(strcmp(token,"ready")==0)
                     {
-
+                        printf("COMANDA IN SERVIZIO\n");
                     }
                 }
             }
