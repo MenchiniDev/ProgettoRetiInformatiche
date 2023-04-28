@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*td.c 27/04/2023*/
+#include <arpa/inet.h> /*td.c 28/04/2023*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -82,8 +82,8 @@ int main()
         perror("Errore in fase di connessione: \n");
         exit(1);
     }
-    if(!help) 
-        printf("inserisci il codice di prenotazione\n");
+
+    printf("inserisci il codice di prenotazione\n");
 
     FD_SET(sd, &master);
     FD_SET(0, &master);
@@ -103,9 +103,6 @@ int main()
             {
                 if(i==0)
                 {
-                    
-                    help++;
-                    //printf("inserisci il codice di prenotazione\n");
                     struct Comanda c;
                     char prenoCode[20];
 
@@ -200,11 +197,9 @@ int main()
                     }
                 }else{
                     char buffer_take[1024];
-                    ret = recv(i, (void*)&real_len, sizeof(uint16_t), 0);
-                    // Conversione in formato 'host'
+                    ret = recv(sd, (void*)&real_len, sizeof(uint16_t), 0);
                     len = ntohs(real_len); 
-                    // Ricezione del messaggio
-                    ret = recv(i, (void*)buffer_take, len, 0); 
+                    ret = recv(sd, (void*)buffer_take, len, 0); 
                     printf("%s\n", buffer_take);
                 }
             }

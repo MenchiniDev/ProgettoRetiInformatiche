@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*kd.c 27/04/2023*/
+#include <arpa/inet.h> /*kd.c 28/04/2023*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -94,18 +94,21 @@ int main()
 
                     if(strcmp(token,"take")==0) // mette ad uno la prima comanda
                     {
+                        /*codice comanda*/
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         buffer[bytes_needed-1]='\0';
                         printf("%s",buffer);
 
+                        /*id del tavolo*/
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         buffer[bytes_needed-1]='\0';
                         printf("-%s\n",buffer);
                     
+                        /*portate della comanda*/
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
@@ -131,6 +134,14 @@ int main()
                     {
                         printf("COMANDA IN SERVIZIO\n");
                     }
+                }
+                else /*gestisco la notifica dal server*/
+                {
+                    ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                    bytes_needed = ntohs(real_len);
+                    ret = recv(sd,(void*)buffer,bytes_needed,0);
+                    buffer[bytes_needed-1]='\0';
+                    printf("%s\n",buffer);
                 }
             }
         }

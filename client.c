@@ -1,4 +1,4 @@
-#include <arpa/inet.h>/*client.c 27/04/2023*/
+#include <arpa/inet.h> /*28/04/2023*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -120,8 +120,11 @@ int main(int argc, char* argv[])
         ret = recv(sd,(void*)&real_len,sizeof(uint32_t),0);
         bytes_needed = ntohs(real_len);
         ret = recv(sd,(void*)CodicePrenotazione,bytes_needed,0);
-        printf("Prenotazione effettuata! Codice: %s\n",CodicePrenotazione);
-
+        if(strcmp(CodicePrenotazione,"NO")==0)
+        {
+            printf("tavolo non piu disponibile\n");
+        }else
+            printf("Prenotazione effettuata! Codice: %s\n",CodicePrenotazione);
         }
     }
 }
