@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*28/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,6 +13,9 @@
 #define MAX_LEN 100
 #define MAX_DEVICE 6 
 
+/*
+    struttura utile per la prenotazione del campo find
+*/
 struct prenotazione 
 {
     char cognome[20];
@@ -29,6 +32,7 @@ int main(int argc, char* argv[])
     char proposta[ROOM_SIZE*TABLE_SIZE][BUFFER_SIZE];
     uint32_t real_len;
     char buffer[BUFFER_SIZE];
+    uint16_t port = (uint16_t)strtol(argv[1],NULL,10);
     char bufferCommand[BUFFER_SIZE];
     char CodicePrenotazione[20];
     int bufferlen;
@@ -47,7 +51,7 @@ int main(int argc, char* argv[])
     sd = socket(AF_INET,SOCK_STREAM,0);
     memset(&srv_addr,0,sizeof(srv_addr));
     srv_addr.sin_family=AF_INET;
-    srv_addr.sin_port=htons(4242);
+    srv_addr.sin_port=htons(port);
     inet_pton(AF_INET,"127.0.0.1",&srv_addr.sin_addr); 
 
     ret = connect(sd,(struct sockaddr*)&srv_addr,sizeof(srv_addr));
@@ -76,6 +80,11 @@ int main(int argc, char* argv[])
 
         if(strcmp(token,"esc")==0)
         {
+        strcpy(buffer,token);
+        len = strlen(buffer);
+        real_len=htons(len);
+        ret=send(sd,(void*)&real_len,sizeof(uint32_t),0);
+        ret = send(sd,(void*)buffer,len,0);
         printf("arrivederci!\n");
         return;
         }//FIND
@@ -113,8 +122,6 @@ int main(int argc, char* argv[])
         real_len=htons(len);
         ret=send(sd,(void*)&real_len,sizeof(uint32_t),0);
         ret=send(sd,(void*)buffer,len,0);
-
-        //printf("dati inviati:%s lunghezza:[%d]\n",buffer,len);
 
         //SESTA RICEZIONE: RICEZIONE PARAMETRI
         ret = recv(sd,(void*)&real_len,sizeof(uint32_t),0);

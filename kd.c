@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*kd.c 28/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -22,12 +22,13 @@ void stampa()
 }
 
 
-int main()
+int main(int argc, char* argv[])
 {
     int ret,len,sd;
     int bytes_needed;
     uint32_t real_len;
     char buffer[BUFFER_SIZE],bufferCommand[BUFFER_SIZE];
+    uint16_t port = (uint16_t)strtol(argv[1],NULL,10);
     struct sockaddr_in srv_addr;
     char *type="K\0";
     char token[5];
@@ -44,7 +45,7 @@ int main()
     sd = socket(AF_INET,SOCK_STREAM,0);
     memset(&srv_addr,0,sizeof(srv_addr));
     srv_addr.sin_family=AF_INET;
-    srv_addr.sin_port=htons(4242);
+    srv_addr.sin_port=htons(port);
     inet_pton(AF_INET,"127.0.0.1",&srv_addr.sin_addr); 
 
     ret = connect(sd,(struct sockaddr*)&srv_addr,sizeof(srv_addr));
@@ -99,7 +100,7 @@ int main()
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         buffer[bytes_needed-1]='\0';
-                        printf("%s",buffer);
+                        printf("%s ",buffer);
 
                         /*id del tavolo*/
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
@@ -132,6 +133,7 @@ int main()
                     }
                     else if(strcmp(token,"ready")==0)
                     {
+                        
                         printf("COMANDA IN SERVIZIO\n");
                     }
                 }

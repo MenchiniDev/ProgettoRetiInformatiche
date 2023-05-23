@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*td.c 28/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -34,12 +34,13 @@ void stampa()
     return;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     int ret,len,sd;
     int bytes_needed;
     uint32_t real_len;
     char buffer[BUFFER_SIZE],bufferCommand[BUFFER_SIZE];
+    uint16_t port = (uint16_t)strtol(argv[1],NULL,10);
     int bufferlen;
     char *type = "T\0";
     int cmd_new=1;
@@ -59,7 +60,7 @@ int main()
     sd = socket(AF_INET,SOCK_STREAM,0);
     memset(&srv_addr,0,sizeof(srv_addr));
     srv_addr.sin_family=AF_INET;
-    srv_addr.sin_port=htons(4242);
+    srv_addr.sin_port=htons(port);
     inet_pton(AF_INET,"127.0.0.1",&srv_addr.sin_addr); 
 
     ret = connect(sd,(struct sockaddr*)&srv_addr,sizeof(srv_addr));
@@ -142,11 +143,11 @@ int main()
                     real_len=htons(len);
                     ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
                     ret =send(sd,(void*)bufferCommand,len,0);
-                    //printf("token: %s\n",token);
 
-                    if(strcmp(token,"help")==0)
-                    {
-                        printf("-280 giorni al carnevale\n");
+                    if(strcmp(token,"help")==0){
+                    printf("menu \n");
+                    printf("comanda {<piatto_1-quantità1>...piatto_n-quantità_n>} \n");
+                    printf("conto\n");
                     }
                     else if(strcmp(token,"menu")==0)
                     {
@@ -179,23 +180,36 @@ int main()
                         if(strcmp(new_buffer,"OK\0")==0){
                         printf("\nCOMANDA RICEVUTA\n");
                         }
-                        //printf("COMANDA RICEVUTA a nome di: %s\n",prenoCode);
                     }
                     else if(strcmp(token,"conto")==0)
                     {
+                        /*invio il codice prenotazione*/
+
+                        len = strlen(prenoCode) + 1;
+                        real_len=htons(len);
+                        ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        ret=send(sd,(void*)prenoCode,len,0);
+                        printf("prenoCode: %s\n",prenoCode);
+
+                        /*gestisco l'effettiva possibilità di avere un conto lato server*/
                         int conto = 0;
                         ret = recv(sd,(void*)&real_len,sizeof(uint32_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
-                        printf("conto:%s\n",buffer);
-
-                        /*ricevo il costo*/
+                        buffer[strlen(buffer)]='\0';
                         ret = recv(sd,&conto,sizeof(int),0);
-                        printf("totale: %d\n",conto);
+                        if(strcmp(buffer,"no")==0)
+                            printf("impossibile generare il conto: non sono state servite tutte le portate\n");
+                        else{
+                            printf("conto:%s\n",buffer);
+                            /*ricevo il costo*/
+                            printf("totale: %d\n",conto);
+                        }
 
                         /*ricevo il conto e lo stampo a video*/
                     }
                 }else{
+                    /*ricevo le notifiche di preparazione e di servizio delle comande*/
                     char buffer_take[1024];
                     ret = recv(sd, (void*)&real_len, sizeof(uint16_t), 0);
                     len = ntohs(real_len); 

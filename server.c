@@ -1,4 +1,4 @@
-#include <arpa/inet.h> /*server.c 28/04/2023*/
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -27,7 +27,11 @@
 
 #define MAX_DISP 5
 
-
+/*
+    struttura che si inizializza tramite il file filePrenotazioni,
+    contenente tutti i giorni di una settimana, gli orari e i tavoli ed i
+    relativi status per ogni orario
+*/
 struct settimana{
     int numeroGiorno;
     struct sala{
@@ -74,7 +78,10 @@ struct comanda /*non so se mantenerla*/
     int quantita;
     int stato; // 0->appena arrivata, 1->in gestione 2->in servizio
 };
-
+/*
+    queste strutture dati identificano i dspositivi, distinguendo tra i tavoli 
+    ed i dispositivi generici
+*/
 typedef struct
 {
     int sd;
@@ -87,7 +94,10 @@ typedef struct
     char tipo[3];
 }dispTav;
 
-
+/*
+    questa funzione carica il socket id dentro il file connessioni, 
+    con cui identifichiamo quale socket controlla quale tipo di dispositivo    
+*/
 void caricaDisp(disp*d, int nDisp){
     FILE*fptr;
     fptr=fopen("dispConnessi.txt","w");
@@ -102,7 +112,10 @@ void caricaDisp(disp*d, int nDisp){
     }
     fclose(fptr);
 }
-
+/*
+    funzione similare alla precedente;
+    differisce soltanto per il tipo di dispositivo, che sono solo tavoli
+*/
 void caricaTav(dispTav*d2, int nDisp){
     FILE*fptr;
     fptr=fopen("tavConnessi.txt","w");
@@ -119,6 +132,10 @@ void caricaTav(dispTav*d2, int nDisp){
     fclose(fptr);
 }
 
+/*
+    se le funzioni precedenti scrivevano dentro i file contententi le connessioni attive
+    queste vi leggono e restituiscono gli identificatori (se esistono)
+*/
 int  leggi_tipo(int newsocket, char* newtype, int nDisp){
     FILE* fp;
     int socket=0;
@@ -166,7 +183,10 @@ int leggi_tipo_2(int newsocket, int* newtype, int nDisp){
     return controllo;       //se non lo trovi metti controllo a 0
     fclose(fptr);
 }
-
+/*
+    funzione che dato in ingresso un idPrenotazione (conoscendo il formato con cui sono creati)
+    modifica *table con il tavolo relativo, controllo è solo una variabile di controllo 
+*/
 int getTable(char *idpren,char *table)
 {
     int controllo=0;
@@ -187,7 +207,9 @@ int getTable(char *idpren,char *table)
     return controllo;
 }
 
-
+/*
+    funzione che chiude tutte le connessioni nei file interessati
+*/
 void chiudi_tutto(){
     FILE *fp6;
     
@@ -208,7 +230,7 @@ void chiudi_tutto(){
     fclose(fp6);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     int ret, sd, new_sd, len,bytes_needed,cl;
     int nDisp=0;
@@ -220,6 +242,7 @@ int main()
     int check =0;
     int check_2=0;
     char buffer[1024],bufferCommand[1024],buftype[2];
+    uint16_t port = (uint16_t)strtol(argv[1],NULL,10);
     char type;
     int type_2;
     FILE *fp,*fptr;
@@ -258,7 +281,7 @@ int main()
 
     FD_ZERO(&master);
     FD_ZERO(&read_fds);
-
+    /*inizializzo il menu*/
     fp = fopen("Menu2.txt","r");
     if(fp == NULL)
     {
@@ -288,7 +311,7 @@ int main()
         ii++;
     }/*inizializzazione del menu completata*/
 
-
+    /*inizializzo la struttura dati con il file di riferimento*/
     if ((fptr = fopen("prenotazioniTotali.txt","r")) == NULL){
        printf("Error! opening file\n");
        exit(1);
@@ -323,16 +346,13 @@ int main()
         }
     }
 
-
-
-
-    /*popolazione della comanda e delle prenotazioni gia avvenute*/
+    /*popolazione della comanda e delle prenotazioni avvenute*/
 
 
     listener = socket(AF_INET,SOCK_STREAM,0);
     memset(&cl_addr,0,sizeof(cl_addr));
     cl_addr.sin_family=AF_INET;
-    cl_addr.sin_port=htons(4242); 
+    cl_addr.sin_port=htons(port); 
     inet_pton(AF_INET,"127.0.0.1",&cl_addr.sin_addr); 
 
     ret = bind(listener,(struct sockaddr*)&cl_addr,sizeof(cl_addr));
@@ -355,19 +375,20 @@ int main()
             perror("ERRORE SELECT");
             exit(1);
         }
+        /*modo per operare: ogni volta che arriva un device questi mi manda il suo tipo,
+        io lo salvo nel file delle cconnessioni relative e gestisco le possibili richieste con
+        una serie di if e strcmp() */
         for(i = 0; i <= fdmax ; i++)
         {
             if(FD_ISSET(i,&read_fds))
             {                   
                 if(i==0)
                 {
-                    /*stampe che devo fare lato server*/
                     char input_string[BUFFER_SIZE];
                     char command[5];
                     char plus[20];
                     fgets(input_string, 100, stdin);
                     sscanf(input_string,"%s %s",command,plus);
-                    //printf("command:%s\n",command);
                     if(strcmp(command,"stat")==0)
                     {   
                         FILE *fp4,*fp5;
@@ -416,7 +437,6 @@ int main()
                         while(fgets(line,sizeof(line),fp4))
                         {
                             sscanf(line,"%s %s %s %d %d",com,idpren,pieta,&stato,&sock);
-                            //printf("here\n");
                             if(stato==1 && strcmp(com,com2)!=0 || b==0)
                             {
                                 b=1;
@@ -424,7 +444,6 @@ int main()
                                 getTable(idpren,tav);
                                 printf("%s %s\n",com,tav);    
                             }
-                            //printf("LINE:%s %s %s %d %d\n",com,idpren,pieta,stato,sock);
                             strcpy(com2,com);
                             if(stato==1)
                                 printf("%s\n",pieta);
@@ -505,7 +524,6 @@ int main()
                                     tok = strtok(NULL," ");
                                     sock=*(tok) - 48;
 
-                                    //printf("%s %s %s %d %d\n",com,idpren,portata,stato,sock);
                                     printf("%s\n",portata);
                                     b=0;
                                 }
@@ -517,7 +535,7 @@ int main()
                     {
                         printf("spengo tutto\n");
                         FILE *fp7;
-                        fp7 = fopen("dispConnessi.txt","r+");
+                        fp7 = fopen("dispConnessi.txt","r");
                         char line[100];
                         int sockid;
                         char tipo;
@@ -591,9 +609,9 @@ int main()
                     ret = recv(i,(void*)&real_len,sizeof(uint16_t),0);
                     bytes_needed = ntohs(real_len);
                     ret = recv(i,(void*)bufferCommand,bytes_needed,0);
-                    printf("bufcom:%s\n",bufferCommand);
+                    printf("bufcom:%s,ret:%d\n",bufferCommand,ret);
                     if(ret == 0){
-                        printf("CHIUSURA rilevata!\n");
+                        printf("CHIUSURA rilevata! %d\n",i);
                         fflush(stdout);
                         close(i);
                         FD_CLR(i, &master);
@@ -606,8 +624,11 @@ int main()
                         close(i);
                         FD_CLR(i, &master);
                         break;
+                    }        
+                    if(strcmp("esc",bufferCommand)==0)
+                    {
+                        printf("chiusura client:%d\n",i);
                     }
-
                     char bufferPrenotazioni[1024];
                     
                     //TERZA RICEZIONE: DATI
@@ -615,8 +636,6 @@ int main()
                     bytes_needed = ntohs(real_len);
 
                     ret = recv(i,(void*)buffer,bytes_needed,0);
-
-                    printf("dati ricevuti:%s",buffer);
 
                     //FIND
                     if(strcmp("find",bufferCommand)==0)
@@ -635,10 +654,8 @@ int main()
                         while (token != NULL) {
                         strcpy(stringa[b],token);
                         token = strtok(NULL, "-");
-                        //printf("stringa: %s\n",stringa[i]);
                         b++;
                         }
-                        //printf("convStringa: %d\n",convStringa);
                         fp = fopen("Prenotazioni.txt", "r");
                         if (fp == NULL) {
                         printf("Errore nell'apertura del file.\n");
@@ -649,7 +666,6 @@ int main()
                             token = strtok(line, " "); 
                             int a=0;
                             while (token != NULL) {
-                            //printf("%s\n", token);  // stampa il singolo parametro
                             if(a==0)
                                 strcpy(nome,token);
                             if(a==1)
@@ -667,12 +683,8 @@ int main()
                             token = strtok(NULL, " "); 
                             a++;
                             }
-                            //printf("nel file abbiamo: %s %s %d %d %s %s %s\n",nome,dataP,orario,indice,nometav,sala,vicinanza);
-
-                        //printf("orari e date: %d %d %s %s\n",orario,p.orario,dataP,Data);
                         if(strcmp(dataP,Data)==0)
                         {
-                            //printf("here\n");
                             if(orario==p.orario)
                             {
                             int ii;int j; int k,g;
@@ -688,7 +700,6 @@ int main()
                                                         if(sett[ii].sala[j].tav[k].status[g].orario == p.orario){
                                                             if(sett[ii].sala[j].tav[k].status[g].stato == 0){
                                                                 sett[ii].sala[j].tav[k].status[g].stato=1;
-                                                                //printf("%s %s %s %d prenotato\n",sett[ii].sala[j].tav[k].nome_tavolo,sett[ii].sala[j].nome_sala,sett[ii].sala[j].tav[k].vicinanza,sett[ii].sala[j].tav[k].status[g].stato);
                                                                 }
                                                                 }
                                                             }         
@@ -713,8 +724,6 @@ int main()
                         printf("Errore nell'apertura del file");
                         exit(1);
                         }
-                        //printf("il giorno che cerchiamo è il: %d\n",convStringa);
-
                         int ii;int j;int k; int g;int count;
                         for(ii = 0; ii<WEEK_SIZE;ii++){
                         count = 0;             
@@ -723,22 +732,17 @@ int main()
                             memset(prenotabili,0,sizeof(prenotabili));
                         for(j = 0; j<ROOM_SIZE; j++){
                             for(k = 0; k<TABLE_SIZE; k++){
-                                //printf("nPosti: %d\n",sett[ii].sala[j].tav[k].nPosti);
                                 if(sett[ii].sala[j].tav[k].nPosti >= p.nPersone){
                                     for(g=0; g<HOUR_SIZE;g++){
                                         if(sett[ii].sala[j].tav[k].status[g].orario == p.orario){
-                                            //printf("%s %s %s %d\n", sett[ii].sala[j].tav[k].nome_tavolo, sett[ii].sala[j].nome_sala, sett[ii].sala[j].tav[k].vicinanza,sett[ii].sala[j].tav[0].status[g].stato);
                                             if(sett[ii].sala[j].tav[k].status[g].stato == 0){
                                                 
-                                                //printf("%s %s %s\n", sett[ii].sala[j].tav[k].nome_tavolo, sett[ii].sala[j].nome_sala, sett[ii].sala[j].tav[k].vicinanza);
                                                 count++;
                                                 sprintf(buffer,"%d) %s %s %s\n",count, sett[ii].sala[j].tav[k].nome_tavolo, sett[ii].sala[j].nome_sala, sett[ii].sala[j].tav[k].vicinanza);
                                                 strcat(prenotabili,buffer);
                                                 strcpy(tabInviati[count].nome_sala,sett[ii].sala[j].nome_sala);
                                                 strcpy(tabInviati[count].nome_tavolo,sett[ii].sala[j].tav[k].nome_tavolo);
                                                 strcpy(tabInviati[count].vicinanza,sett[ii].sala[j].tav[k].vicinanza);
-                                                //printf("tavolo disponibile: %s\n",tabInviati[count].nome_tavolo);
-                                                //printf("tavolo salvato: %s\n",tabInviati[count].nome_tavolo);
                                                 }
                                             }
                                         }                  
@@ -752,7 +756,6 @@ int main()
                     // QUARTA TRASMISSIONE: INVIO PARAMETRI
                     printf("invio dati!");
                     len = strlen(prenotabili) +1;
-                    //printf("lunghezza buffer: %d\n",len); 
                     real_len=htons(len);
                     ret=send(i,(void*)&real_len,sizeof(uint32_t),0);
                     ret=send(i,(void*)prenotabili,len,0);
@@ -764,7 +767,6 @@ int main()
                         char bufferFile[1024];
                         char BufferOrarioPren[1024];
                         sscanf(buffer, "%s %d" ,bufferCommand, &prenIndex);
-                        //printf("ossia il tavolo: %d %s %s %s\n", prenIndex,tabInviati[prenIndex].nome_tavolo, tabInviati[prenIndex].nome_sala,tabInviati[prenIndex].vicinanza);
                         
                         
                         fp = fopen("Prenotazioni.txt", "a");
@@ -781,14 +783,11 @@ int main()
                         {
                             sscanf(line,"%s %s",idPren,nTav);
                             printf("nomeTav:%s tavolo:%s data: %s ora:%d\n",nTav,tabInviati[prenIndex].nome_tavolo,p.data,p.orario);
-                            //if(){ /*data e ora corrispondono DA FARE FORSE*/
                                 if(strcmp(nTav,tabInviati[prenIndex].nome_tavolo)==0)
                                 {
                                 b = 1;
-                                //printf("la prenotazione per questo tavolo è gia stata trovata!\n");
                                 sprintf(BufferOrarioPren,"%s","NO");
                                 }
-                            //}
                         }
                         fclose(ffp);
                         if(b==0){
@@ -807,26 +806,20 @@ int main()
                         }
                         //BufferOrarioPren contiene il codice prenotazione
                        
-                        //fprintf(fp,"%s %s",PrenotazioneCode,tabInviati[prenIndex].nome_tavolo);
 
                         len = strlen(BufferOrarioPren)+1;
                         real_len = htons(len);
                         ret = send(i, (void*) &real_len, sizeof(uint32_t),0);
                         ret = send(i, (void*) BufferOrarioPren, len, 0);
 
-                        //printf("mando il codice: %s\n",BufferOrarioPren);
                         if(b==0){
                             fprintf(fp,"%s %s\n",BufferOrarioPren,tabInviati[prenIndex].nome_tavolo);
                             fclose(fp);
                         }
                         }
-                    }else if(strcmp("esc",bufferCommand)==0)
-                    {
-                        printf("chiusura client:%d\n",i);
                     }
                     if(type=='T')
                     {
-                        //int check = leggi_tipo(new_sd, &type, numdevice);
 
                         /*
                           l'intero serve per evitare di mandare sempre il
@@ -860,14 +853,12 @@ int main()
                         {   
                             sscanf(linea,"%s %s",code,nTav);
                             code[strlen(code)]='\0';
-                            //printf("confronto con:%s.\n",code);
 
                             if(strcmp(code,prenoCode)==0){
                                 b = 1;
                                 ok = 's';
                                 aut = 1;
                                 strcpy(c.idPrenotazione,prenoCode);
-                                //c.idPrenotazione[8]='\0';
                                 printf("c.idpren|:%s\n",c.idPrenotazione);
                                 /*mi salvo il numero del tavolo relativo alla prenotazione e lo scrivo in tavConnessi*/
                                 int jj;
@@ -880,7 +871,6 @@ int main()
                                 }
                                 caricaTav(d_2,nDisp2);
                                 break;
-                                //printf("codice trovato!\n");
                             }
                         }
                         
@@ -952,8 +942,6 @@ int main()
                                         m[ii].costo = *(token) - 48;
 
                                         sprintf(buffer,"%c%c - %s %d\n",a,b,m[ii].pietanza,m[ii].costo);
-
-                                        //printf("menu: codice: %s,pietanza:%s,costo:%s",m[ii].codice,m[ii].pietanza,m[ii].costo);
                                         
                                         strcat(bufConcatenazione,buffer); 
                                         ii++;
@@ -1005,7 +993,7 @@ int main()
                             ret=send(i,(void*)&real_len,sizeof(uint16_t),0);
                             ret =send(i,(void*)bufret,len,0);
                             fclose(fp);
-                            /*mando segnale del tavolo che ha inviato la comanda a tutti i kd?*/
+                            /*mando segnale del tavolo che ha inviato la comanda a tutti i kd*/
                             int sd_i;
                             char sglBuffer[BUFFER_SIZE];
                             for(sd_i=0;sd_i<nDisp;sd_i++)
@@ -1023,18 +1011,34 @@ int main()
                         }
                         if(strcmp(bufferCommand,"conto")==0)
                         {
+                            char prenoCode[20];
+                            printf("here\n");
+                            /*innanzitutto verichiamo se il tavolo in questione può richiedere il conto
+                            ossia se tutte le sue portate sono contrassegnate come in servizio*/
+                            ret = recv(i,(void*)&real_len,sizeof(uint16_t),0);
+                            bytes_needed = ntohs(real_len);
+                            ret = recv(i,(void*)prenoCode,bytes_needed,0);
+                            printf("CodPren: %s\n",prenoCode);
+
                             int conteggio=0;
                             int Nportate=0;
                             int parziale=0;
+                            int FallisciConto=0;
                             char line[100];
                             char code[20];
                             char comanda[BUFFER_SIZE];
                             char BufferTotComande[BUFFER_SIZE];
                             char appoggio[BUFFER_SIZE];
+                            int stato=0;
                             fp = fopen("Comande.txt","r");
                             while (fgets(line, sizeof(line), fp)) { 
-                                sscanf(line,"%s %s %s",bufferCommand,code,comanda);
-                                printf("CODE:%s c.idPren:%s\n",code,c.idPrenotazione);
+                                sscanf(line,"%s %s %s %d",bufferCommand,code,comanda,&stato);
+                                printf("CODE:%s c.idPren:%s,stato:%d\n ",code,c.idPrenotazione,stato);
+                                if(stato!=2)
+                                {
+                                    FallisciConto=1; //ci sono portate per questa prenotazione non servite: il conto fallisce
+                                    break;
+                                }
                                 if(strcmp(code,c.idPrenotazione)==0)
                                 {
                                     printf("siamo dentro\n");
@@ -1051,14 +1055,15 @@ int main()
                                             parziale =  m[ii].costo;
                                         }
                                     }
-                                    //printf("codice: %s,costo: %d\n",tok,parziale);
                                     tok = strtok(NULL,"-");
-                                    //printf("quantita:%s\n",tok);
                                     Nportate= *(tok) -48;
                                     conteggio +=  parziale*Nportate;
                                     strcat(BufferTotComande,appoggio);
-                                    //printf("conteggio: %d\n",conteggio);
                                 }       
+                            }
+                            if(FallisciConto==1)
+                            {
+                                strcpy(BufferTotComande,"no\0");
                             }
                             //mando le comande
                             strcpy(buffer,BufferTotComande);
@@ -1066,10 +1071,9 @@ int main()
                             real_len=htons(len);
                             ret=send(i,(void*)&real_len,sizeof(uint32_t),0);
                             ret =send(i,(void*)buffer,len,0);
-                            //printf("conto da mandare:%s\n",buffer);
                             fclose(fp);
 
-                            //mando il conto e DEVO aggiornare lo stato
+                            //mando il conto
                             send(i, &conteggio, sizeof(int), 0);
                         }
                     }
@@ -1115,9 +1119,9 @@ int main()
                             char line1[100];
                             char idPren[20];
                             char tav[20];
-                            
+                            int sock = 0;
                             while (fgets(line, sizeof(line), fp)) { /*Comande.txt*/
-                                    sscanf(line,"%s %s %s %d",comanda,Prenotazione,ordine,&stato);
+                                    sscanf(line,"%s %s %s %d %d",comanda,Prenotazione,ordine,&stato,&sock);
                                     if(stato==0 && b == 0) //salvo nome comanda utile
                                     {
                                         printf("prenotazione:%s.\n",Prenotazione);
@@ -1144,8 +1148,26 @@ int main()
                                         real_len=htons(len);
                                         ret=send(i,(void*)&real_len,sizeof(uint16_t),0);
                                         ret=send(i,(void*)tav,len,0);
+                                        
+                                        /*dico al tavolo designato che la sua comanda è in preparazione*/
+
+                                        int sdt_i;
+                                        char notifyBuffer[BUFFER_SIZE];
+                                        for(sdt_i=0;sdt_i<nDisp2;sdt_i++)
+                                        {   
+                                        printf("tipo e tav %s %s\n",d_2[sdt_i].tipo,tav);
+                                        if(strcmp(d_2[sdt_i].tipo,tav)==0) /*tavolo trovato, mando la notifica al socket*/
+                                        {
+                                        printf("mando la notifica al tavolo del socket:%d\n",d_2[sdt_i].sd);
+                                        sprintf(notifyBuffer,"la comanda %s è in preparazione\n",comanda);
+                                        len = strlen(notifyBuffer) + 1;
+                                        real_len=htons(len);
+                                        ret=send(d_2[sdt_i].sd,(void*)&real_len,sizeof(uint16_t),0);
+                                        ret=send(d_2[sdt_i].sd,(void*)notifyBuffer,len,0);
+                                        }
+                                        }
                                     }
-                                    if(strcmp(comanda,comandaContr)==0){
+                                    if(strcmp(comanda,comandaContr)==0 && stato==0){
                                         stato = 1;
                                         sprintf(appoggio,"%s\n",ordine);
                                         strcat(ComBuffer,appoggio);
@@ -1153,11 +1175,12 @@ int main()
 
                                     }//la i infondo indica il socket che ha preso le comande
                                     else{
-                                    fprintf(fp1, "%s %s %s %d %d\n", comanda,Prenotazione,ordine,stato,0);
+                                    fprintf(fp1, "%s %s %s %d %d\n", comanda,Prenotazione,ordine,stato,sock);
                                     }
                                     stato=0;
                                     
                             }
+                            strcpy(comanda,comandaContr);
                             /*poi mando gli ordini della comanda al kd*/
                             len = strlen(ComBuffer) + 1;
                             real_len=htons(len);
@@ -1165,29 +1188,12 @@ int main()
                             ret=send(i,(void*)ComBuffer,len,0);
 
                             printf("comanda mandata: \n%s\n",ComBuffer);
-
+                            /*mi appoggio ad un file temporaneo per modificare lo stato delle comande interessate*/
                             fclose(fp);
                             fclose(fp1);
                             fclose(fp2);
                             remove("Comande.txt");
                             rename("Comande2.txt","Comande.txt");
-
-                            /*invio al tavolo designato che la sua comanda è in preparazione*/
-                            int sdt_i;
-                            char notifyBuffer[BUFFER_SIZE];
-                            for(sdt_i=0;sdt_i<nDisp2;sdt_i++)
-                            {   
-                                printf("tipo e tav %s %s\n",d_2[sdt_i].tipo,tav);
-                                if(strcmp(d_2[sdt_i].tipo,tav)==0) /*tavolo trovato, mando la notifica al socket*/
-                                {
-                                    printf("mando la notifica al tavolo del socket:%d\n",d_2[sdt_i].sd);
-                                    sprintf(notifyBuffer,"la comanda %s è in preparazione\n",comanda);
-                                    len = strlen(notifyBuffer) + 1;
-                                    real_len=htons(len);
-                                    ret=send(d_2[sdt_i].sd,(void*)&real_len,sizeof(uint16_t),0);
-                                    ret=send(d_2[sdt_i].sd,(void*)notifyBuffer,len,0);
-                                }
-                            }
 
                         }else if(strcmp(bufferCommand,"show")==0)
                         {
@@ -1233,8 +1239,8 @@ int main()
                                 printf("comanda mandata: \n%s\n",ComBuffer);
 
                         }else if(strcmp(bufferCommand,"ready")==0)
-                        { //mette a 2 lo stato della comanda designata
-
+                        { //mette a 2 lo stato della comanda designata e notifico
+                            char tav[20];
                             char idComanda[10];
                             char nomeTav[10];
                             FILE *fp1;
@@ -1251,6 +1257,7 @@ int main()
 
                             t = strtok(NULL," ");
                             strcpy(nomeTav,t);
+                            nomeTav[strlen(nomeTav)-1]='\0';
                             printf("%s\n",nomeTav);
                             fp = fopen("Comande2.txt","w");
                             fp1 = fopen("Comande.txt","r");
@@ -1269,14 +1276,30 @@ int main()
                             while(fgets(line,sizeof(line),fp1))
                             {
                                 sscanf(line,"%s %s %s %d %d",comanda,idPren,piet,&stato,&sock);
-                                printf("%s %s %s %d %d\n",comanda,idPren,piet,stato,sock);
+                                //printf("%s %s %s %d %d\n",comanda,idPren,piet,stato,sock);
                                 if(strcmp(comanda,idComanda)==0)
                                 {
                                     fprintf(fp,"%s %s %s %d %d\n",comanda,idPren,piet,2,sock);
                                 }else
                                     fprintf(fp,"%s %s %s %d %d\n",comanda,idPren,piet,stato,sock);
                                 
-                            } /*dovrei prendere il numero del socket che aveva la comanda definita e dirgli che è in servizio*/
+                            } /*mando la notifica al socket table che la sua comanda è in servizio*/
+                            /*ricavo il tavolo prenotato con Prenotazione*/
+                            int sdt_i;
+                            char notifyBuffer[BUFFER_SIZE];
+                            for(sdt_i=0;sdt_i<nDisp2;sdt_i++)
+                            {   
+                                printf("tipo e tav %s - %s\n",d_2[sdt_i].tipo,nomeTav);
+                                if(strcmp(d_2[sdt_i].tipo,nomeTav)==0) /*tavolo trovato, mando la notifica al socket*/
+                                {
+                                    printf("mando la notifica al tavolo del socket:%d\n",d_2[sdt_i].sd);
+                                    sprintf(notifyBuffer,"la comanda %s è in servizio\n",idComanda);
+                                    len = strlen(notifyBuffer) + 1;
+                                    real_len=htons(len);
+                                    ret=send(d_2[sdt_i].sd,(void*)&real_len,sizeof(uint16_t),0);
+                                    ret=send(d_2[sdt_i].sd,(void*)notifyBuffer,len,0);
+                                }
+                            }/*come sopra, mi appoggio ad un file temporaneo per modificare lo stato delle comande interessate*/
                             fclose(fp);
                             fclose(fp1);
                             remove("Comande.txt");
