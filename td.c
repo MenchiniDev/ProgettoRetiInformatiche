@@ -38,10 +38,13 @@ int main(int argc, char* argv[])
 {
     int ret,len,sd;
     int bytes_needed;
-    uint32_t real_len;
+    uint16_t real_len;
     char buffer[BUFFER_SIZE],bufferCommand[BUFFER_SIZE];
-    uint16_t port = (uint16_t)strtol(argv[1],NULL,10);
-    int bufferlen;
+    uint16_t port;
+    //if(argc != 2)
+        port = 4242;
+    //else
+    //    port = (uint16_t)strtol(argv[1],NULL,10);
     char *type = "T\0";
     int cmd_new=1;
     struct sockaddr_in srv_addr;
@@ -73,7 +76,6 @@ int main(int argc, char* argv[])
     fdmax = max(sd, 0);
     int i;
     char ok='s';
-    int help =0;
     
     //INVIO T E SECONDO TIPO
     real_len=htons(2);
@@ -117,10 +119,19 @@ int main(int argc, char* argv[])
                     real_len=htons(len);
                     ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
                     ret =send(sd,(void*)prenoCode,len,0);
-
                     //ricezione risposta
                     ok = 'n';
-                    recv(sd, &ok, sizeof(char), 0);
+                    ret = recv(sd, &ok, sizeof(char), 0);
+                    if(ret==0)
+                    {
+                        printf("arrivederci!\n");
+                        break;
+                    }
+                    if(ret<0)
+                    {
+                        printf("arrivederci 2!\n");
+                        break;
+                    }
                     if(ok=='s')
                     {
                             stampa();
@@ -143,7 +154,11 @@ int main(int argc, char* argv[])
                     real_len=htons(len);
                     ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
                     ret =send(sd,(void*)bufferCommand,len,0);
-
+                    if(ret==0)
+                    {
+                        printf("arrivederci\n");
+                        return 0;
+                    }
                     if(strcmp(token,"help")==0){
                     printf("menu \n");
                     printf("comanda {<piatto_1-quantità1>...piatto_n-quantità_n>} \n");
@@ -152,7 +167,7 @@ int main(int argc, char* argv[])
                     else if(strcmp(token,"menu")==0)
                     {
                     //ricezione menu
-                        ret = recv(sd,(void*)&real_len,sizeof(uint32_t),0);
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         printf("%s\n",buffer);
@@ -193,7 +208,7 @@ int main(int argc, char* argv[])
 
                         /*gestisco l'effettiva possibilità di avere un conto lato server*/
                         int conto = 0;
-                        ret = recv(sd,(void*)&real_len,sizeof(uint32_t),0);
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         buffer[strlen(buffer)]='\0';
@@ -214,11 +229,15 @@ int main(int argc, char* argv[])
                     ret = recv(sd, (void*)&real_len, sizeof(uint16_t), 0);
                     len = ntohs(real_len); 
                     ret = recv(sd, (void*)buffer_take, len, 0); 
+                    if(strcmp(buffer_take,"ce")==0)
+                    {
+                        printf("arrivederci\n");
+                        return;
+                    }
                     printf("%s\n", buffer_take);
+
                 }
             }
         }
-
-
     }
 }

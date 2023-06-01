@@ -26,14 +26,17 @@ int main(int argc, char* argv[])
 {
     int ret,len,sd;
     int bytes_needed;
-    uint32_t real_len;
+    uint16_t real_len;
     char buffer[BUFFER_SIZE],bufferCommand[BUFFER_SIZE];
-    uint16_t port = (uint16_t)strtol(argv[1],NULL,10);
+    uint16_t port;
+    //if(argc != 2)
+        port = 4242;
+    //else
+    //    port = (uint16_t)strtol(argv[1],NULL,10);
     struct sockaddr_in srv_addr;
     char *type="K\0";
     char token[5];
     char input_string[BUFFER_SIZE];
-    FILE *fp;
 
     fd_set master;
     fd_set read_fds;
@@ -49,7 +52,6 @@ int main(int argc, char* argv[])
     inet_pton(AF_INET,"127.0.0.1",&srv_addr.sin_addr); 
 
     ret = connect(sd,(struct sockaddr*)&srv_addr,sizeof(srv_addr));
-    //real_len=htons(2);
     ret = send(sd, type, strlen(type)+1, 0);
     if(ret < 0)
     {
@@ -83,7 +85,6 @@ int main(int argc, char* argv[])
                     fgets(input_string, 100, stdin);
                     sscanf(input_string,"%s",token);
                     //invio token
-
                     strcpy(bufferCommand,input_string);
                     len = strlen(bufferCommand) +1;
                     real_len=htons(len);
@@ -99,8 +100,9 @@ int main(int argc, char* argv[])
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
-                        buffer[bytes_needed-1]='\0';
-                        printf("%s ",buffer);
+                        if(strcmp(buffer,"no")!=0)
+                        {
+                        printf("%s",buffer);
 
                         /*id del tavolo*/
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
@@ -115,26 +117,30 @@ int main(int argc, char* argv[])
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         buffer[bytes_needed-1]='\0';
                         printf("%s\n",buffer);
-
+                        }else
+                        {
+                            printf("nessuna portata disponibile\n");
+                        }
                     }
                     else if(strcmp(token,"show")==0)
                     {
-                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
-                        bytes_needed = ntohs(real_len);
-                        ret = recv(sd,(void*)buffer,bytes_needed,0);
-                        buffer[bytes_needed-1]='\0';
-                        printf("comanda:%s\n",buffer);
-
+                        memset(buffer,0,sizeof(buffer));
                         ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
                         bytes_needed = ntohs(real_len);
                         ret = recv(sd,(void*)buffer,bytes_needed,0);
                         buffer[bytes_needed-1]='\0';
                         printf("%s\n",buffer);
+
+                        //memset(buffer,0,sizeof(buffer));
                     }
                     else if(strcmp(token,"ready")==0)
                     {
-                        
-                        printf("COMANDA IN SERVIZIO\n");
+                        printf("ready\n");
+                        ret = recv(sd,(void*)&real_len,sizeof(uint16_t),0);
+                        bytes_needed = ntohs(real_len);
+                        ret = recv(sd,(void*)buffer,bytes_needed,0);
+                        buffer[bytes_needed-1]='\0';
+                        printf("%s\n",buffer);
                     }
                 }
                 else /*gestisco la notifica dal server*/
@@ -143,6 +149,11 @@ int main(int argc, char* argv[])
                     bytes_needed = ntohs(real_len);
                     ret = recv(sd,(void*)buffer,bytes_needed,0);
                     buffer[bytes_needed-1]='\0';
+                    if(strcmp(buffer,"ce")==0)
+                    {
+                        printf("arrivederci\n");
+                        return;
+                    }
                     printf("%s\n",buffer);
                 }
             }
