@@ -232,7 +232,10 @@ int main(int argc, char* argv[])
                     if(strcmp(buffer_take,"ce")==0)
                     {
                         printf("arrivederci\n");
-                        return;
+                        close(sd);
+                        FD_CLR(sd, &master);
+                        FD_CLR(i,&master);
+                        exit(0);
                     }
                     printf("%s\n", buffer_take);
 

@@ -27,9 +27,12 @@ struct prenotazione
 
 int main(int argc, char* argv[])
 {
-    int ret,len,sd;
+    int ret,len,sd,fdmax;
+    int i=0;
     int bytes_needed;
-    uint32_t real_len;
+    uint16_t real_len;
+    fd_set read_fds;
+    fd_set master;
     char buffer[BUFFER_SIZE];
     uint16_t port;
     //if(argc != 2)
@@ -65,10 +68,27 @@ int main(int argc, char* argv[])
         printf("impossibile connettersi al server \n");
         exit(-1);
     }
-
+    FD_SET(sd,&master);
+    FD_SET(0,&master);
+    fdmax=sd;
 
     //PRENOTAZIONE SU CLIENT    
     for(;;){
+        read_fds=master;
+        ret=select(fdmax+1,&read_fds,NULL,NULL,NULL);
+        if(ret<0){
+            perror("ERRORE SELECT\n");
+            exit(1);
+        }
+        for(i=0; i<=fdmax; i++){
+            if(FD_ISSET(i,&read_fds)){
+               if(i==0){
+
+            if(ret<0){
+                perror("Richiesta problematica");
+                exit(0);
+            }
+
         fgets(input_string, 100, stdin);
         sscanf(input_string,"%s",token);
 
@@ -89,6 +109,10 @@ int main(int argc, char* argv[])
         ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
         ret = send(sd,(void*)buffer,len,0);
         printf("arrivederci!\n");
+        close(sd);
+         FD_CLR(sd, &master);
+         FD_CLR(i,&master);
+         exit(0);
         return 0;
         }//FIND
         else if(strcmp(token,"find")==0) 
@@ -102,8 +126,6 @@ int main(int argc, char* argv[])
         real_len=htons(len);
         ret=send(sd,(void*)&real_len,sizeof(uint16_t),0);
         ret = send(sd,(void*)buffer,len,0);
-
-        printf("dati: %s\n",buffer);
 
         if(ret < len)
         {
@@ -150,5 +172,21 @@ int main(int argc, char* argv[])
         {
             printf("arrivederci!\n");
         }
+        }
+        else{ 
+        memset(buffer,0,strlen(buffer));
+        ret=recv(sd,(void*)&real_len,sizeof(uint8_t),0);
+        ret=recv(sd,(void*)buffer,real_len,0);
+   
+        if(strcmp(buffer,"ce")==0)
+        printf("Chiusura di tutti i device \n");
+        close(sd);
+        FD_CLR(sd, &master);
+        FD_CLR(i,&master);
+         exit(0);
     }
-}
+    }
+    }
+
+        }
+    }

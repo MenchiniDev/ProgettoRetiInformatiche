@@ -1,0 +1,15 @@
+A1-panzerotti crudo e stracchino-3
+P1-riso alle seppie e bieta-8
+P2-riso al nero di seppia-8
+P3-penne alla marinara-7
+P4-pasta al pomodoro-5
+P5-tortelli al ragu di polpo-10
+S1-polpo marinato-11
+S2-fritto calamari e gamberi-11
+S3-acciughe fritte-8
+S4-seppie in zimino-8
+S5-caciucco-8
+D1-bomboloni vuoti-2
+D2-bomboloni ripieni-3
+D3-coppetta gelato-3
+D4-crepes-4
