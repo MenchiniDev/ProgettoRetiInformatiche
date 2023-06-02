@@ -417,10 +417,11 @@ int main(int argc, char* argv[])
                         while(fgets(line,sizeof(line),fp4))
                         {
                             sscanf(line,"%s %s %s %d %d",com,idpren,pieta,&stato,&sock);
-                            if((stato==0 && strcmp(com,com2)!=0) || b==0)
+                            if((stato==0 && strcmp(com,com2)!=0) && b==0)
                             {
                                 b=1;
                                 char tav[10];
+                                memset(tav,0,sizeof(tav));
                                 getTable(idpren,tav);
                                 printf("%s %s\n",com,tav);    
                             }
@@ -446,7 +447,7 @@ int main(int argc, char* argv[])
                         while(fgets(line,sizeof(line),fp4))
                         {
                             sscanf(line,"%s %s %s %d %d",com,idpren,pieta,&stato,&sock);
-                            if((stato==1 && strcmp(com,com2)!=0) || b==0)
+                            if((stato==1 && strcmp(com,com2)!=0) && b==0)
                             {
                                 b=1;
                                 char tav[10];
@@ -472,7 +473,7 @@ int main(int argc, char* argv[])
                         while(fgets(line,sizeof(line),fp4))
                         {
                             sscanf(line,"%s %s %s %d %d",com,idpren,pieta,&stato,&sock);
-                            if((stato==2 && strcmp(com,com2)!=0) || b==0)
+                            if((stato==2 && strcmp(com,com2)!=0) && b==0)
                             {
                                 b=1;
                                 char tav[10];
